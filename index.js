@@ -14,7 +14,7 @@ require('./db/index');
 const app = express();
 
 
-const allowedOrigins = ['https://www.example.com'];
+const allowedOrigins = ['https://benika.vercel.app'];
 
 
 const corsOptions = {
