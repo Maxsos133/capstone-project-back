@@ -20,16 +20,17 @@ const getOrdersById = async (req, res) => {
 
 const createOrder = async (req, res) => {
     try {
-      const { buyerEmail, size, color, fabric, description} = req.body
+      const { buyerEmail, size, color, description, dress, customSizeValues} = req.body
       
   
       let newOrder = await Order.create({
         buyer: buyerEmail,
         size: size,
         color: color,
-        fabric: fabric,
         status: 'pending',
-        description: description
+        description: description,
+        dress: dress,
+        customSize: customSizeValues
       })
   
       res.json(newOrder)
