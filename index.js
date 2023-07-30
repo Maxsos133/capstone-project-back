@@ -16,7 +16,21 @@ require(`./db/index`)
 
 const app = express()
 
-app.use(cors())
+const allowedOrigins = ['https://BeNika.vercel.app'];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Check if the request origin is in the allowed list
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // This is important to allow sending cookies from frontend
+  })
+);
 app.use(express.json())
 
 app.use(logger(`dev`))
