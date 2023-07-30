@@ -1,36 +1,35 @@
-const express = require(`express`)
-const cors = require(`cors`)
-const PORT = process.env.PORT || 3001
-const db = require(`./db`)
-const path = require(`path`)
-const AppRouter = require(`./routes/AppRouter`)
-const cookieParser = require(`cookie-parser`)
-const logger = require(`morgan`)
-const session = require(`express-session`)
+const express = require('express');
+const cors = require('cors');
+const PORT = process.env.PORT || 3001;
+const db = require('./db');
+const path = require('path');
+const AppRouter = require('./routes/AppRouter');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const session = require('express-session');
+
+require('dotenv').config();
+require('./db/index');
+
+const app = express();
 
 
+const allowedOrigins = ['https://www.example.com'];
 
-require(`dotenv`).config()
 
-require(`./db/index`)
+const corsOptions = {
+  origin: function (origin, callback) {
+  
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
 
-const app = express()
-
-const allowedOrigins = ['https://BeNika.vercel.app'];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Check if the request origin is in the allowed list
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true, // This is important to allow sending cookies from frontend
-  })
-);
+app.use(cors(corsOptions));
 app.use(express.json())
 
 app.use(logger(`dev`))
