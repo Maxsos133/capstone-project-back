@@ -8,7 +8,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const session = require('express-session');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
-const bodyParser = require('body-parser');
+
 
 const { Order } = require('./models');
 
@@ -32,7 +32,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(bodyParser.json());
+
 app.use(logger(`dev`));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
