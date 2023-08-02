@@ -86,9 +86,7 @@ app.post('/webhook', (req, res) => {
   response.send();
 });
 
-app.use(express.json());
 app.use(logger('dev'));
-app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
