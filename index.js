@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const session = require('express-session');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
+const getRawBody = require('raw-body')
 
 const { Order } = require('./models');
 
@@ -38,11 +39,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
   let event = request.body;
 
   if (stripeWebhookSecret) {
+    const rawBody = getRawBody(request)
     const signature = request.headers['stripe-signature'];
     try {
-      event = stripe.webhooks.constructEvent(request.body, signature, stripeWebhookSecret);
+      event = stripe.webhooks.constructEvent(rawBody, signature, stripeWebhookSecret);
     } catch (err) {
-      console.log(`⚠️  Webhook signature verification failed.`, err.message);
+      console.log(`Webhook signature verification failed.`, err.message);
       return response.sendStatus(400);
     }
   }
