@@ -30,6 +30,54 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Add bodyParser middleware to parse incoming webhook events from Stripe
+app.use(express.raw({ type: 'application/json' }));
+
+// Webhook route to handle Stripe events
+app.post('/webhook', async (request, response) => {
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
+  } catch (err) {
+    response.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const checkoutSessionCompleted = event.data.object;
+      const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
+
+      try {
+        const newOrder = await Order.create({
+          buyer: buyerEmail,
+          size: size,
+          color: color,
+          status: 'pending',
+          description: description,
+          dress: dress,
+        });
+
+        console.log('Order created:', newOrder.id);
+      } catch (e) {
+        console.error('Error creating order:', e);
+      }
+      break;
+    // ... handle other event types
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  response.send();
+});
+
 app.use(express.json());
 app.use(logger('dev'));
 app.use(express.urlencoded({ extended: false }));
@@ -79,53 +127,6 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-// Add bodyParser middleware to parse incoming webhook events from Stripe
-app.use(express.raw({ type: 'application/json' }));
-
-// Webhook route to handle Stripe events
-app.post('/webhook', async (request, response) => {
-  const sig = request.headers['stripe-signature'];
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
-  } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
-
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const checkoutSessionCompleted = event.data.object;
-      const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
-
-      try {
-        const newOrder = await Order.create({
-          buyer: buyerEmail,
-          size: size,
-          color: color,
-          status: 'pending',
-          description: description,
-          dress: dress,
-        });
-
-        console.log('Order created:', newOrder.id);
-      } catch (e) {
-        console.error('Error creating order:', e);
-      }
-      break;
-    // ... handle other event types
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  // Return a 200 response to acknowledge receipt of the event
-  response.send();
-});
 
 app.use(`/`, AppRouter);
 
