@@ -91,6 +91,54 @@ app.post('/webhook', (request, response) => {
   response.send();
 });
 
+app.use(express.json());
+app.use(logger('dev'));
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  next();
+});
+
+// ... (other middleware and routes)
+
+app.post("/create-checkout-session", async (req, res) => {
+  const { buyerEmail, size, color, description, dress, } = req.body;
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: req.body.items.map(item => {
+        return {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.name
+            },
+            unit_amount: item.price * 100,
+          },
+          quantity: item.quantity
+        };
+      }),
+      metadata: {
+        buyerEmail,
+        size,
+        color,
+        description,
+        dress,
+      },
+      success_url: 'http://localhost:5173/startorder',
+      cancel_url: 'http://localhost:5173/startorder'
+    });
+
+    // Send the Stripe session URL to the client
+    res.json({ url: session.url });
+
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.use(`/`, AppRouter);
 
 app.listen(PORT, () => {
