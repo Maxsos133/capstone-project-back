@@ -17,7 +17,16 @@ require('dotenv').config();
 require('./db/index');
 
 const app = express();
+
+app.use(
+  bodyParser.json({
+      verify: function(req, res, buf) {
+          req.rawBody = buf;
+      }
+  })
+);
 app.use(bodyParser.json());
+
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
 const corsOptions = {
@@ -42,7 +51,7 @@ app.post('/webhook', bodyParser.raw({type: "*/*"}), (req, res) => {
 
   try {
   
-    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
