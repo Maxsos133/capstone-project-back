@@ -44,7 +44,7 @@ app.post(
 
 
 
-    if (endpointSecret) {
+    if (STRIPE_WEBHOOK_SECRET) {
 
       const signature = request.headers['stripe-signature'];
       try {
@@ -58,7 +58,7 @@ app.post(
         return response.sendStatus(400);
       }
     }
-    let subscription;
+    
     let status;
 
     switch (event.type) {
