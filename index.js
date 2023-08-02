@@ -6,7 +6,7 @@ const AppRouter = require('./routes/AppRouter');
 const logger = require('morgan');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
 const getRawBody = require('raw-body')
-const bodyParser = require('body-parser')
+
 
 
 
@@ -25,7 +25,6 @@ const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow all origins by passing null as the first argument to the callback
     callback(null, true);
   },
   credentials: true,
@@ -85,8 +84,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ... (other middleware and routes)
-
 app.post("/create-checkout-session", async (req, res) => {
   const { buyerEmail, size, color, description, dress, } = req.body;
   try {
@@ -116,7 +113,6 @@ app.post("/create-checkout-session", async (req, res) => {
       cancel_url: 'http://localhost:5173/startorder'
     });
 
-    // Send the Stripe session URL to the client
     res.json({ url: session.url });
 
   } catch (e) {
