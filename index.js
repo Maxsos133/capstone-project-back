@@ -30,10 +30,10 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Add bodyParser middleware to parse incoming webhook events from Stripe
-app.use(express.raw({ type: 'application/json' }));
+
 
 // Webhook route to handle Stripe events
 app.post('/webhook', async (request, response) => {
@@ -126,6 +126,7 @@ app.post("/create-checkout-session", async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
 
 
 app.use(`/`, AppRouter);
