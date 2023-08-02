@@ -5,15 +5,9 @@ const db = require('./db');
 const AppRouter = require('./routes/AppRouter');
 const logger = require('morgan');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
-var bodyParser = require('body-parser');
 
 
 
-var options = {
-  inflate: true,
-  limit: '100kb',
-  type: 'application/json'
-};
 
 
 const { Order } = require('./models');
@@ -22,7 +16,13 @@ require('dotenv').config();
 require('./db/index');
 
 const app = express();
-app.use(bodyParser.raw(options));
+app.use(
+  express.raw({
+    inflate: true,
+    limit: '50mb',
+    type: () => true, // this matches all content types
+  })
+);
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
 const corsOptions = {
@@ -43,7 +43,7 @@ app.use(cors(corsOptions));
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', (req, res) => {
+app.post('/webhook',express.raw({ inflate: true, limit: '50mb', type: ()=> true}), (req, res) => {
   const sig = req.headers['stripe-signature'];
 
   let event;
