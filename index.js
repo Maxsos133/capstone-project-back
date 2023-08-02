@@ -2,13 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const PORT = process.env.PORT || 3001;
 const db = require('./db');
-const path = require('path');
 const AppRouter = require('./routes/AppRouter');
-const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-const session = require('express-session');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
-const bodyParser = require('body-parser')
 
 const { Order } = require('./models');
 
@@ -39,17 +35,15 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 // Webhook route to handle Stripe events
 app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
   const sig = request.headers['stripe-signature'];
+
   let event;
 
- 
-    
-    try {
-      event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
-    } catch (err) {
-      console.log(`⚠️  Webhook signature verification failed.`, err.message);
-      return response.sendStatus(400);
-    }
-  
+  try {
+    event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
+  } catch (err) {
+    response.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
 
   switch (event.type) {
     case 'checkout.session.completed':
