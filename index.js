@@ -44,7 +44,7 @@ app.post(
 
 
 
-    if (STRIPE_WEBHOOK_SECRET) {
+    if (stripeWebhookSecret) {
 
       const signature = request.headers['stripe-signature'];
       try {
