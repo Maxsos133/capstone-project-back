@@ -34,15 +34,31 @@ app.use(cors(corsOptions));
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+// Middleware to get the raw request body
+app.use((req, res, next) => {
+  getRawBody(req, {
+    length: req.headers['content-length'],
+    limit: '1mb', // Adjust the limit as per your requirements
+    encoding: 'utf-8',
+  }, (err, rawBody) => {
+    if (err) return next(err);
+    req.rawBody = rawBody;
+    next();
+  });
+});
+
 // Webhook route to handle Stripe events
-app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
+app.post('/webhook', (request, response) => {
   let event = request.body;
 
   if (stripeWebhookSecret) {
-    const rawBody = getRawBody(request)
     const signature = request.headers['stripe-signature'];
     try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, stripeWebhookSecret);
+      event = stripe.webhooks.constructEvent(
+        request.rawBody, // Use the raw request body
+        signature,
+        stripeWebhookSecret
+      );
     } catch (err) {
       console.log(`Webhook signature verification failed.`, err.message);
       return response.sendStatus(400);
@@ -73,54 +89,6 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (request, respon
       console.log(`Unhandled event type ${event.type}.`);
   }
   response.send();
-});
-
-app.use(express.json());
-app.use(logger('dev'));
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  next();
-});
-
-// ... (other middleware and routes)
-
-app.post("/create-checkout-session", async (req, res) => {
-  const { buyerEmail, size, color, description, dress, } = req.body;
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      line_items: req.body.items.map(item => {
-        return {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: item.name
-            },
-            unit_amount: item.price * 100,
-          },
-          quantity: item.quantity
-        };
-      }),
-      metadata: {
-        buyerEmail,
-        size,
-        color,
-        description,
-        dress,
-      },
-      success_url: 'http://localhost:5173/startorder',
-      cancel_url: 'http://localhost:5173/startorder'
-    });
-
-    // Send the Stripe session URL to the client
-    res.json({ url: session.url });
-
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
 });
 
 app.use(`/`, AppRouter);
