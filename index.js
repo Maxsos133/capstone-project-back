@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const session = require('express-session');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
+const bodyParser = require('body-parser')
 
 const { Order } = require('./models');
 
@@ -31,16 +32,28 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+
+// parse application/json
+app.use(bodyParser.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf
+  }
+}))
+
+
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', express.raw({ type: 'application/json' }), (request, response) => {
-  let event = request.body;
+app.post('/webhook', (request, response) => {
+  let event;
 
   if (stripeWebhookSecret) {
     const signature = request.headers['stripe-signature'];
     try {
-      event = stripe.webhooks.constructEvent(request.body, signature, stripeWebhookSecret);
+      event = stripe.webhooks.constructEvent(req.rawBody, signature, stripeWebhookSecret);
     } catch (err) {
       console.log(`⚠️  Webhook signature verification failed.`, err.message);
       return response.sendStatus(400);
