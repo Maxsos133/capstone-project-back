@@ -46,14 +46,13 @@ app.use(cors(corsOptions));
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', (req, res) => {
+app.post('/webhook', bodyParser.raw({type: "application/json"}), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
-  const payload = req.body
-  const payloadString = JSON.stringify(payload, null, 2)
+
   try {
   
-    event = stripe.webhooks.constructEvent(payloadString, sig, stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
@@ -85,7 +84,7 @@ app.post('/webhook', (req, res) => {
   res.send();
 });
 
-app.use(express.json({verify: (req,res,buf) => { req.rawBody = buf }}));
+app.use(express.json());
 app.use(express.urlencoded());
 app.use(logger('dev'));
 app.use((req, res, next) => {
