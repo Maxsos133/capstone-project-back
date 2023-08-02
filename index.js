@@ -9,7 +9,6 @@ const logger = require('morgan');
 const session = require('express-session');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
 
-
 const { Order } = require('./models');
 
 require('dotenv').config();
@@ -32,9 +31,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-
-app.use(logger(`dev`));
-app.use(express.json());
+app.use(logger('dev'));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use((req, res, next) => {
@@ -42,12 +39,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/', (req, res) => {
-  res.send('server working');
-});
+// ... (other middleware and routes)
 
 app.post("/create-checkout-session", async (req, res) => {
-  const { buyerEmail, size, color, description, dress,  } = req.body;
+  const { buyerEmail, size, color, description, dress, customSizeValues } = req.body;
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -70,7 +65,7 @@ app.post("/create-checkout-session", async (req, res) => {
         color,
         description,
         dress,
-        
+        customSizeValues,
       },
       success_url: 'http://localhost:5173/startorder',
       cancel_url: 'http://localhost:5173/startorder'
@@ -87,11 +82,10 @@ app.post("/create-checkout-session", async (req, res) => {
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Add bodyParser middleware to parse incoming webhook events from Stripe
-
 app.use(express.raw({ type: 'application/json' }));
 
 // Webhook route to handle Stripe events
-app.post('/webhook', (request, response) => {
+app.post('/webhook', async (request, response) => {
   const sig = request.headers['stripe-signature'];
 
   let event;
@@ -107,18 +101,22 @@ app.post('/webhook', (request, response) => {
   switch (event.type) {
     case 'checkout.session.completed':
       const checkoutSessionCompleted = event.data.object;
-      const { buyerEmail, size, color, description, dress,} = checkoutSessionCompleted.metadata;
+      const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
 
-      Order.create({
-        buyer: buyerEmail,
-        size: size,
-        color: color,
-        status: 'pending',
-        description: description,
-        dress: dress,
-      });
+      try {
+        const newOrder = await Order.create({
+          buyer: buyerEmail,
+          size: size,
+          color: color,
+          status: 'pending',
+          description: description,
+          dress: dress,
+        });
 
-      console.log('Order created:', checkoutSessionCompleted.id);
+        console.log('Order created:', newOrder.id);
+      } catch (e) {
+        console.error('Error creating order:', e);
+      }
       break;
     // ... handle other event types
     default:
