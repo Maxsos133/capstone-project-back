@@ -5,6 +5,16 @@ const db = require('./db');
 const AppRouter = require('./routes/AppRouter');
 const logger = require('morgan');
 const stripe = require('stripe')(process.env.STRIPE_KEY);
+var bodyParser = require('body-parser');
+
+
+
+var options = {
+  inflate: true,
+  limit: '100kb',
+  type: 'application/json'
+};
+
 
 const { Order } = require('./models');
 
@@ -12,7 +22,7 @@ require('dotenv').config();
 require('./db/index');
 
 const app = express();
-
+app.use(bodyParser.raw(options));
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
 const corsOptions = {
@@ -28,20 +38,20 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.json());
+
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
-  const sig = request.headers['stripe-signature'];
+app.post('/webhook', (req, res) => {
+  const sig = req.headers['stripe-signature'];
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
   } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
 
@@ -68,10 +78,10 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
     default:
       console.log(`Unhandled event type ${event.type}.`);
   }
-  response.send();
+  res.send();
 });
 
-
+app.use(express.json());
 app.use(logger('dev'));
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
