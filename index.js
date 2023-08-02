@@ -33,28 +33,18 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-// parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
-
-// parse application/json
-app.use(bodyParser.json({
-  verify: (req, res, buf) => {
-    req.rawBody = buf
-  }
-}))
-
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', (req, res) => {
-  const sig = req.headers['stripe-signature'];
+app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  const sig = request.headers['stripe-signature'];
   let event;
 
-  
+ 
     
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
+      event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
     } catch (err) {
       console.log(`⚠️  Webhook signature verification failed.`, err.message);
       return response.sendStatus(400);
@@ -88,7 +78,6 @@ app.post('/webhook', (req, res) => {
 });
 
 app.use(logger('dev'));
-app.use(cookieParser());
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   next();
