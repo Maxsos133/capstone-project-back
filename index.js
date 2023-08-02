@@ -47,11 +47,11 @@ app.use(bodyParser.json({
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', (request, response) => {
+app.post('/webhook', (req, res) => {
   let event;
 
   if (stripeWebhookSecret) {
-    const signature = request.headers['stripe-signature'];
+    const signature = req.headers['stripe-signature'];
     try {
       event = stripe.webhooks.constructEvent(req.rawBody, signature, stripeWebhookSecret);
     } catch (err) {
