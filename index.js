@@ -88,8 +88,10 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Add bodyParser middleware to parse incoming webhook events from Stripe
 
+app.use(express.raw({ type: 'application/json' }));
+
 // Webhook route to handle Stripe events
-app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+app.post('/webhook', (request, response) => {
   const sig = request.headers['stripe-signature'];
 
   let event;
@@ -104,9 +106,8 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
   // Handle the event
   switch (event.type) {
     case 'checkout.session.completed':
-  
       const checkoutSessionCompleted = event.data.object;
-      const { buyerEmail, size, color, description, dress, customSizeValues } = checkoutSessionCompleted.metadata;
+      const { buyerEmail, size, color, description, dress,} = checkoutSessionCompleted.metadata;
 
       Order.create({
         buyer: buyerEmail,
@@ -115,10 +116,9 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
         status: 'pending',
         description: description,
         dress: dress,
-        
       });
 
-      console.log('Order created:', session.id);
+      console.log('Order created:', checkoutSessionCompleted.id);
       break;
     // ... handle other event types
     default:
