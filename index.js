@@ -32,7 +32,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
+export const config = {
+  api: {
+      bodyParser: false
+  }
+};
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
