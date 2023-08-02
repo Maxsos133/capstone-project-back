@@ -37,7 +37,7 @@ app.use(cors(corsOptions));
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook',express.raw({ inflate: true, limit: '50mb', type: ()=> true}), (req, res) => {
+app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
 
   let event;
