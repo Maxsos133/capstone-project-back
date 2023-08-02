@@ -46,7 +46,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
 
   try {
   
-    event = stripe.webhooks.constructEvent(rawBody, sig, stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
