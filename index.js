@@ -17,11 +17,7 @@ require('./db/index');
 
 const app = express();
 app.use(
-  express.raw({
-    inflate: true,
-    limit: '50mb',
-    type: () => true, // this matches all content types
-  })
+  express.json()
 );
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
@@ -43,43 +39,43 @@ app.use(cors(corsOptions));
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook',express.raw({ inflate: true, limit: '50mb', type: ()=> true}), (req, res) => {
-  const sig = req.headers['stripe-signature'];
+// app.post('/webhook',express.raw({ inflate: true, limit: '50mb', type: ()=> true}), (req, res) => {
+//   const sig = req.headers['stripe-signature'];
 
-  let event;
+//   let event;
 
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
-  } catch (err) {
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
+//   try {
+//     event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
+//   } catch (err) {
+//     res.status(400).send(`Webhook Error: ${err.message}`);
+//     return;
+//   }
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const checkoutSessionCompleted = event.data.object;
-      const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
-      console.log(`Subscription status is `);
-      try {
-        Order.create({
-          buyer: buyerEmail,
-          size: size,
-          color: color,
-          status: 'pending',
-          description: description,
-          dress: dress,
-        });
+//   switch (event.type) {
+//     case 'checkout.session.completed':
+//       const checkoutSessionCompleted = event.data.object;
+//       const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
+//       console.log(`Subscription status is `);
+//       try {
+//         Order.create({
+//           buyer: buyerEmail,
+//           size: size,
+//           color: color,
+//           status: 'pending',
+//           description: description,
+//           dress: dress,
+//         });
 
-        console.log('Order created:', checkoutSessionCompleted.id);
-      } catch (e) {
-        console.error('Error creating order:', e);
-      }
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}.`);
-  }
-  res.send();
-});
+//         console.log('Order created:', checkoutSessionCompleted.id);
+//       } catch (e) {
+//         console.error('Error creating order:', e);
+//       }
+//       break;
+//     default:
+//       console.log(`Unhandled event type ${event.type}.`);
+//   }
+//   res.send();
+// });
 
 
 app.use(logger('dev'));
@@ -90,7 +86,7 @@ app.use((req, res, next) => {
 
 // ... (other middleware and routes)
 
-app.post("/create-checkout-session",express.json(), async (req, res) => {
+app.post("/create-checkout-session", async (req, res) => {
   const { buyerEmail, size, color, description, dress, } = req.body;
   try {
     const session = await stripe.checkout.sessions.create({
