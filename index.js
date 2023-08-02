@@ -16,9 +16,7 @@ require('dotenv').config();
 require('./db/index');
 
 const app = express();
-app.use(
-  express.json()
-);
+
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
 
 const corsOptions = {
@@ -41,13 +39,13 @@ export const config = {
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', async (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   const sig = req.headers['stripe-signature'];
 
   let event;
 
   try {
-    const rawBody = await getRawBody(req)
+  
     event = stripe.webhooks.constructEvent(rawBody, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
@@ -80,7 +78,8 @@ app.post('/webhook', async (req, res) => {
   res.send();
 });
 
-
+app.use(express.json());
+app.use(express.urlencoded());
 app.use(logger('dev'));
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
