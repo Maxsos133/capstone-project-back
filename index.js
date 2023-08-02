@@ -48,17 +48,18 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
 app.post('/webhook', (req, res) => {
+  const sig = req.headers['stripe-signature'];
   let event;
 
-  if (stripeWebhookSecret) {
-    const signature = req.headers['stripe-signature'];
+  
+    
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, signature, stripeWebhookSecret);
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
     } catch (err) {
       console.log(`⚠️  Webhook signature verification failed.`, err.message);
       return response.sendStatus(400);
     }
-  }
+  
 
   switch (event.type) {
     case 'checkout.session.completed':
