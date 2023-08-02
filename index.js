@@ -18,14 +18,7 @@ require('./db/index');
 
 const app = express();
 
-app.use(bodyParser.json({
-  verify: function (req, res, buf) {
-      var url = req.originalUrl;
-      if (url.startsWith('/webhook')) {
-          req.rawBody = buf.toString()
-      }
-  }
-}));
+
 
 
 const allowedOrigins = ['https://benika.vercel.app', 'http://localhost:5173'];
@@ -46,13 +39,13 @@ app.use(cors(corsOptions));
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 // Webhook route to handle Stripe events
-app.post('/webhook', bodyParser.raw({type: "application/json"}), async (req, res) => {
+app.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
   try {
-  
-    event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
+    const rawBody = await getRawBody(req)
+    event = stripe.webhooks.constructEvent(rawBody, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
