@@ -90,7 +90,7 @@ app.use((req, res, next) => {
 
 // ... (other middleware and routes)
 
-app.post("/create-checkout-session", async (req, res) => {
+app.post("/create-checkout-session",express.json(), async (req, res) => {
   const { buyerEmail, size, color, description, dress, } = req.body;
   try {
     const session = await stripe.checkout.sessions.create({
