@@ -36,47 +36,57 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 
 // Webhook route to handle Stripe events
-app.post('/webhook', async (request, response) => {
-  const sig = request.headers['stripe-signature'];
+app.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  (request, response) => {
+    let event = request.body;
 
-  let event;
 
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, stripeWebhookSecret);
-  } catch (err) {
-    response.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const checkoutSessionCompleted = event.data.object;
-      const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
+    if (endpointSecret) {
 
+      const signature = request.headers['stripe-signature'];
       try {
-        const newOrder = await Order.create({
-          buyer: buyerEmail,
-          size: size,
-          color: color,
-          status: 'pending',
-          description: description,
-          dress: dress,
-        });
-
-        console.log('Order created:', newOrder.id);
-      } catch (e) {
-        console.error('Error creating order:', e);
+        event = stripe.webhooks.constructEvent(
+          request.body,
+          signature,
+          stripeWebhookSecret
+        );
+      } catch (err) {
+        console.log(`⚠️  Webhook signature verification failed.`, err.message);
+        return response.sendStatus(400);
       }
-      break;
-    // ... handle other event types
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
+    }
+    let subscription;
+    let status;
 
-  // Return a 200 response to acknowledge receipt of the event
-  response.send();
-});
+    switch (event.type) {
+      case 'customer.session.completed':
+        checkoutSessionCompleted = event.data.object;
+        const { buyerEmail, size, color, description, dress } = checkoutSessionCompleted.metadata;
+        console.log(`Subscription status is ${status}.`);
+        try {
+          Order.create({
+            buyer: buyerEmail,
+            size: size,
+            color: color,
+            status: 'pending',
+            description: description,
+            dress: dress,
+          });
+  
+          console.log('Order created:', checkoutSessionCompleted.id);
+        } catch (e) {
+          console.error('Error creating order:', e);
+        }
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}.`);
+    }
+    response.send();
+  }
+);
 
 app.use(express.json());
 app.use(logger('dev'));
