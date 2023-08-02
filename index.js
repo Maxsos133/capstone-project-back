@@ -49,10 +49,11 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
-
+  const payload = req.body
+  const payloadString = JSON.stringify(payload, null, 2)
   try {
   
-    event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret);
+    event = stripe.webhooks.constructEvent(payloadString, sig, stripeWebhookSecret);
   } catch (err) {
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
