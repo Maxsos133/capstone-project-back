@@ -58,7 +58,7 @@ app.post(
         return response.sendStatus(400);
       }
     }
-    
+    let checkoutSessionCompleted;
     let status;
 
     switch (event.type) {
