@@ -27,28 +27,19 @@ app.use(cors(corsOptions));
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Middleware to get the raw request body
-app.use((req, res, next) => {
-  getRawBody(req, {
-    length: req.headers['content-length'],
-    limit: '1mb', // Adjust the limit as per your requirements
-    encoding: 'utf-8',
-  }, (err, rawBody) => {
-    if (err) return next(err);
-    req.rawBody = rawBody;
-    next();
-  });
-});
+// Use the `express.raw` middleware to handle raw request body
+app.use(express.raw({ type: 'application/json' }));
 
 // Webhook route to handle Stripe events
 app.post('/webhook', (request, response) => {
-  let event = request.body;
+  let event;
 
   if (stripeWebhookSecret) {
     const signature = request.headers['stripe-signature'];
     try {
+      // Use the raw request body directly for signature verification
       event = stripe.webhooks.constructEvent(
-        request.rawBody, // Use the raw request body
+        request.body, // Use the raw request body
         signature,
         stripeWebhookSecret
       );
